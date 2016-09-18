@@ -17,26 +17,35 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.google.android.gms.appindexing.Action;
+import com.google.android.gms.appindexing.AppIndex;
+import com.google.android.gms.common.api.GoogleApiClient;
+
 import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final int PERMISSIONS_REQUEST_CODE=2204;
+    private static final int PERMISSIONS_REQUEST_CODE = 2204;
     //Uriを格納するArrayList
-    private static ArrayList<Uri> URIList=new ArrayList<>();
+    private static ArrayList<Uri> URIList = new ArrayList<>();
     //現在表示している画像がURIListの何番目の画像化を記憶するint
     private static int URIListNum;
 
     //スライドショウ再生に必要なタイマーやハンドラ
     private Timer timer;
-    private Handler handler=new Handler();
-    private long count=0;
+    private Handler handler = new Handler();
+    private long count = 0;
     private TextView timerText;
 
     //再生中か否かを確認するboolean
-    private boolean OnOffSwitch=false;
+    private boolean OnOffSwitch = false;
+    /**
+     * ATTENTION: This was auto-generated to implement the App Indexing API.
+     * See https://g.co/AppIndexing/AndroidStudio for more information.
+     */
+    private GoogleApiClient client;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,39 +53,41 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         //タイマーにテキストをセット
-        timerText=(TextView)findViewById(R.id.timer);
+        timerText = (TextView) findViewById(R.id.timer);
         //timerText.setText("00:00:0");
 
         //一応条件を確認
-        if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.M){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             //パーミッション許可状況の確認
-            if(checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)== PackageManager.PERMISSION_GRANTED){
+            if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
                 //許可されている場合画像情報を取得
                 getContentsInfo();
-            }else{
+            } else {
                 //許可されていない場合(且つandroid6.0以降のバージョンの場合)は許可ダイアログを求める。
-                requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},PERMISSIONS_REQUEST_CODE);
+                requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, PERMISSIONS_REQUEST_CODE);
             }
-        //android5.0系以下の場合
-        }else {
+            //android5.0系以下の場合
+        } else {
             getContentsInfo();
         }
 
-        if(URIList.size()!=0) {
+        if (URIList.size() != 0) {
             //進むボタン
             Button button1 = (Button) findViewById(R.id.button1);
             button1.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    if (URIListNum + 1 == URIList.size()) {
-                        URIListNum = 0;
-                    } else {
-                        URIListNum = URIListNum + 1;
-                    }
+                    if(!OnOffSwitch){
+                        if (URIListNum + 1 == URIList.size()) {
+                            URIListNum = 0;
+                        } else {
+                            URIListNum = URIListNum + 1;
+                        }
 
-                    //画像を表示する。
-                    ImageView imageView = (ImageView) findViewById(R.id.imageView);
-                    imageView.setImageURI(URIList.get(URIListNum));
+                        //画像を表示する。
+                        ImageView imageView = (ImageView) findViewById(R.id.imageView);
+                        imageView.setImageURI(URIList.get(URIListNum));
+                    }
                 }
             });
 
@@ -85,15 +96,17 @@ public class MainActivity extends AppCompatActivity {
             button2.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    if (URIListNum == 0) {
-                        URIListNum = URIList.size() - 1;
-                    } else {
-                        URIListNum = URIListNum - 1;
-                    }
+                    if(!OnOffSwitch) {
+                        if (URIListNum == 0) {
+                            URIListNum = URIList.size() - 1;
+                        } else {
+                            URIListNum = URIListNum - 1;
+                        }
 
-                    //画像を表示する。
-                    ImageView imageView = (ImageView) findViewById(R.id.imageView);
-                    imageView.setImageURI(URIList.get(URIListNum));
+                        //画像を表示する。
+                        ImageView imageView = (ImageView) findViewById(R.id.imageView);
+                        imageView.setImageURI(URIList.get(URIListNum));
+                    }
                 }
             });
 
@@ -104,22 +117,27 @@ public class MainActivity extends AppCompatActivity {
                 public void onClick(View v) {
                     if (OnOffSwitch == false) {
                         OnOffSwitch = true;
+                        timerText.setText("スライドショー中は「進む/戻る」の操作ができません");
                         startSlideshow();
                     } else {
                         OnOffSwitch = false;
+                        timerText.setText("Hello World!!");
                         stopSlideshow();
                     }
                 }
             });
         }
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode,String permissions[],int[] grantResults){
-        switch(requestCode){
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        switch (requestCode) {
             case PERMISSIONS_REQUEST_CODE:
                 //パーミッションが許可された場合。
-                if(grantResults[0]==PackageManager.PERMISSION_GRANTED){
+                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     getContentsInfo();
                 }
                 break;
@@ -128,10 +146,10 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void getContentsInfo(){
+    private void getContentsInfo() {
         //画像の情報を取得する。
-        ContentResolver resolver=getContentResolver();
-        Cursor cursor=resolver.query(
+        ContentResolver resolver = getContentResolver();
+        Cursor cursor = resolver.query(
                 MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
                 null,
                 null,
@@ -139,24 +157,24 @@ public class MainActivity extends AppCompatActivity {
                 null
         );
 
-        if(cursor.moveToFirst()){
-            do{
+        if (cursor.moveToFirst()) {
+            do {
                 //indexからIDを取得しそのIDから画像URIを取得する。
-                int fileIndex=cursor.getColumnIndex(MediaStore.Images.Media._ID);
-                Long id=cursor.getLong(fileIndex);
-                Uri imageUri= ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,id);
+                int fileIndex = cursor.getColumnIndex(MediaStore.Images.Media._ID);
+                Long id = cursor.getLong(fileIndex);
+                Uri imageUri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id);
 
                 //UriをURIList(ArrayList)にスタックする。
                 URIList.add(imageUri);
 
-                Log.d("SlideShowApp","URI : "+imageUri.toString());
-            }while(cursor.moveToNext());
+                Log.d("SlideShowApp", "URI : " + imageUri.toString());
+            } while (cursor.moveToNext());
         }
 
         //ギャラリーに画像がなかった際の処理
-        if(URIList.size()==0){
+        if (URIList.size() == 0) {
             timerText.setText("ギャラリーに画像がありません。");
-        }else {
+        } else {
             //目次（？）の最初の画像を表示する。
             ImageView imageView = (ImageView) findViewById(R.id.imageView);
             URIListNum = 0;
@@ -167,24 +185,24 @@ public class MainActivity extends AppCompatActivity {
     }
 
     //再生メソッド
-    private void startSlideshow(){
-        if(null!=timer){
+    private void startSlideshow() {
+        if (null != timer) {
             timer.cancel();
-            timer=null;
+            timer = null;
         }
 
         //Timerインスタンスを生成
-        timer=new Timer();
+        timer = new Timer();
 
         //カウンター
-        count=0;
+        count = 0;
         //timerText.setText("00:00:0");
 
-        timer.schedule(new TimerTask(){
+        timer.schedule(new TimerTask() {
             @Override
             public void run() {
                 //handlerを使って処理をキューイングする。
-                handler.post(new Runnable(){
+                handler.post(new Runnable() {
                     @Override
                     public void run() {
                         count++;
@@ -193,29 +211,69 @@ public class MainActivity extends AppCompatActivity {
                         //long ms=(count*100-ss*1000-mm*1000*60)/100;
                         //timerText.setText(String.format("%1$02d:%2$02d:%3$01d",mm,ss,ms));
 
-                        if(count%2==0){
-                            if(URIListNum+1==URIList.size()){
-                                URIListNum=0;
-                            }else{
-                                URIListNum=URIListNum+1;
+                        if (count % 2 == 0) {
+                            if (URIListNum + 1 == URIList.size()) {
+                                URIListNum = 0;
+                            } else {
+                                URIListNum = URIListNum + 1;
                             }
 
                             //画像を表示する。
-                            ImageView imageView=(ImageView)findViewById(R.id.imageView);
+                            ImageView imageView = (ImageView) findViewById(R.id.imageView);
                             imageView.setImageURI(URIList.get(URIListNum));
                         }
                     }
                 });
             }
-        },0,1000);
+        }, 0, 1000);
     }
 
     //停止メソッド
-    private void stopSlideshow(){
-        if(null!=timer){
+    private void stopSlideshow() {
+        if (null != timer) {
             timer.cancel();
-            timer=null;
+            timer = null;
             //timerText.setText("00:00:0");
         }
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        client.connect();
+        Action viewAction = Action.newAction(
+                Action.TYPE_VIEW, // TODO: choose an action type.
+                "Main Page", // TODO: Define a title for the content shown.
+                // TODO: If you have web page content that matches this app activity's content,
+                // make sure this auto-generated web page URL is correct.
+                // Otherwise, set the URL to null.
+                Uri.parse("http://host/path"),
+                // TODO: Make sure this auto-generated app URL is correct.
+                Uri.parse("android-app://com.example.nhk2204.autoslideshowapp/http/host/path")
+        );
+        AppIndex.AppIndexApi.start(client, viewAction);
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        Action viewAction = Action.newAction(
+                Action.TYPE_VIEW, // TODO: choose an action type.
+                "Main Page", // TODO: Define a title for the content shown.
+                // TODO: If you have web page content that matches this app activity's content,
+                // make sure this auto-generated web page URL is correct.
+                // Otherwise, set the URL to null.
+                Uri.parse("http://host/path"),
+                // TODO: Make sure this auto-generated app URL is correct.
+                Uri.parse("android-app://com.example.nhk2204.autoslideshowapp/http/host/path")
+        );
+        AppIndex.AppIndexApi.end(client, viewAction);
+        client.disconnect();
     }
 }
